@@ -75,9 +75,10 @@ OPENOCD_SCRIPTS_PATH = stmlib/programming/jtag/
 
 VPATH          = $(PACKAGES)
 
-CC_FILES       = $(notdir $(wildcard $(patsubst %,%/*.cc,$(PACKAGES))))
-C_FILES        = $(notdir $(wildcard $(patsubst %,%/*.c,$(PACKAGES))))
-AS_FILES       = $(notdir $(wildcard $(patsubst %,%/*.s,$(PACKAGES))))
+CC_FILES        = $(notdir $(wildcard $(patsubst %,%/*.cc,$(PACKAGES))))
+CC_FILES       += $(notdir $(wildcard $(patsubst %,%/*.cpp,$(PACKAGES))))
+C_FILES         = $(notdir $(wildcard $(patsubst %,%/*.c,$(PACKAGES))))
+AS_FILES        = $(notdir $(wildcard $(patsubst %,%/*.s,$(PACKAGES))))
 
 TARGET_BIN     = $(BUILD_DIR)$(TARGET).bin
 TARGET_ELF     = $(BUILD_DIR)$(TARGET).elf
@@ -189,7 +190,7 @@ CCFLAGS = \
 			$(INCFLAGS) \
 			$(ARCHFLAGS)
 
-CPPFLAGS = -fno-exceptions -fno-rtti
+CPPFLAGS = -fno-exceptions -fno-rtti -std=c++11
 
 ASFLAGS = $(ARCHFLAGS)
 
@@ -247,6 +248,9 @@ $(BUILD_DIR)%.o: %.c
 $(BUILD_DIR)%.o: %.cc
 	$(CXX) -c $(CCFLAGS) $(CPPFLAGS) $< -o $@
 
+$(BUILD_DIR)%.o: %.cpp
+	$(CXX) -c $(CCFLAGS) $(CPPFLAGS) $< -o $@
+
 $(BUILD_DIR)%.d: %.s
 	$(CC) -c -x assembler-with-cpp -MM $(ASFLAGS) $< -MF $@ -MT $(@:.d=.o)
 
@@ -254,6 +258,9 @@ $(BUILD_DIR)%.d: %.c
 	$(CC) -MM $(CCFLAGS) $< -MF $@ -MT $(@:.d=.o)
 
 $(BUILD_DIR)%.d: %.cc
+	$(CXX) -MM $(CCFLAGS) $(CPPFLAGS) $< -MF $@ -MT $(@:.d=.o)
+
+$(BUILD_DIR)%.d: %.cpp
 	$(CXX) -MM $(CCFLAGS) $(CPPFLAGS) $< -MF $@ -MT $(@:.d=.o)
 
 
@@ -278,7 +285,8 @@ $(BUILD_DIR)%.sym: $(BUILD_DIR)%.elf
 # What to build
 # ------------------------------------------------------------------------------
 
-OBJ_FILES      = $(CC_FILES:.cc=.o) $(C_FILES:.c=.o) $(AS_FILES:.s=.o)
+TMP_OBJ 	   = $(CC_FILES:.cc=.o)
+OBJ_FILES      = $(TMP_OBJ:.cpp=.o) $(C_FILES:.c=.o) $(AS_FILES:.s=.o)
 OBJS           = $(patsubst %,$(BUILD_DIR)%,$(OBJ_FILES)) $(STARTUP_OBJ)
 DEPS           = $(OBJS:.o=.d)
 
@@ -294,7 +302,10 @@ RESOURCE_COMPILER = stmlib/tools/resources_compiler.py
 resources: $(TARGET)/resources.cc
 
 $(TARGET)/resources.cc: $(wildcard $(RESOURCES)/*.py)
+ifdef RESOURCES
 		python $(RESOURCE_COMPILER) $(RESOURCES)/resources.py
+endif
+
 
 
 # ------------------------------------------------------------------------------
