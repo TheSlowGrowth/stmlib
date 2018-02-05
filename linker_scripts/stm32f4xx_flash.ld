@@ -44,6 +44,13 @@ SECTIONS
     *(.glue_7t)
     KEEP (*(.init))
     KEEP (*(.fini))
+
+    . = ALIGN(4);
+    __init_array_start = .;
+    KEEP(*(.init_array))      /* C++ constructors */
+    KEEP(*(.ctors))           /* C++ constructors */
+    __init_array_end = .;
+
     . = ALIGN(16);
      _etext = .;
      _sidata = _etext;
